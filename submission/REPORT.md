@@ -58,7 +58,23 @@ Hai loại lỗi còn lọt được đo trên calibration: `POSSIBLE_LOOSE_BOX`
 
 ## 5. Train: raw vs clean
 
-Chưa chạy train. Phần này là tùy chọn và lượt làm việc này chưa tạo các kết quả huấn luyện; vì vậy không có số mAP để so sánh và không kết luận clean tốt hơn raw.
+Đã train hai biến thể với 2 seed (0, 1), cùng YOLO26n pretrained, 15 epoch, batch 8, ảnh 416 px, CPU; dùng cùng val 40 ảnh và test 100 ảnh (387 instances). Đây là cấu hình CPU rút gọn theo `docs/COLAB.md`, không tương đương lượt Colab T4 20 epoch. Raw có 224 ảnh train; clean có 202 ảnh train theo manifest Hold.
+
+Kết quả test, tổng hợp bởi `python scripts/summarize_results.py` (độ lệch chuẩn mẫu giữa 2 seed):
+
+| Biến thể | Seed 0 mAP50 / mAP50-95 / P / R | Seed 1 mAP50 / mAP50-95 / P / R | TB ± SD: mAP50 | TB ± SD: mAP50-95 | TB ± SD: precision | TB ± SD: recall |
+|---|---|---|---:|---:|---:|---:|
+| Raw (224 ảnh) | 0.6416 / 0.4267 / 0.7523 / 0.5301 | 0.5825 / 0.3882 / 0.5641 / 0.5701 | 0.612 ± 0.042 | 0.407 ± 0.027 | 0.658 ± 0.133 | 0.550 ± 0.028 |
+| Clean (202 ảnh) | 0.5497 / 0.3587 / 0.6684 / 0.4827 | 0.6352 / 0.4271 / 0.7405 / 0.4959 | 0.592 ± 0.060 | 0.393 ± 0.048 | 0.704 ± 0.051 | 0.489 ± 0.009 |
+
+Chênh lệch trung bình clean − raw: mAP50 **−0.020**, mAP50-95 **−0.015**, precision **+0.046**, recall **−0.061**. Hai chỉ số mAP thấp hơn một ít; mức chênh nhỏ hơn độ lệch seed quan sát được ở mAP50 và mAP50-95. Precision tăng nhưng recall giảm. Với chỉ 2 seed, độ lệch chuẩn còn ước lượng kém; không đủ cơ sở kết luận clean tốt hơn hoặc raw tốt hơn. Đặc biệt, raw_seed0, raw_seed1 và clean_seed0 chạy ở Python 3.15.2 / Ultralytics 8.4.211; clean_seed1 được tiếp tục trong `.venv` ở Python 3.12.10 / Ultralytics 8.4.214 theo phiên bản repo pin. Các lần chạy có cùng model, torch 2.15.0 CPU, seed, epoch, batch, imgsz và split, nhưng khác phiên bản Python/Ultralytics là hạn chế về tính đồng nhất cần ghi nhận.
+
+Hai giả thuyết và cách kiểm tiếp:
+
+1. Clean giảm số ảnh train từ 224 xuống 202; loại ảnh trùng, lỗi và ảnh bị chặn có thể làm thay đổi lượng dữ liệu hoặc phân bố lớp, trong khi nhãn được sửa có thể giảm nhiễu. Kiểm bằng bảng số ảnh/instance theo lớp trước–sau, kiểm tra thủ công các ảnh bị loại và chạy ablation trên cùng tập ảnh, chỉ thay nhãn.
+2. Tập clean vẫn ở trạng thái Hold với cảnh báo ngữ nghĩa chưa duyệt trên 29/202 ảnh; nhãn thiếu/lỏng hoặc các lớp ít mẫu có thể làm recall và AP dao động. Kiểm bằng adjudication một tập nhỏ có ground truth, xem lỗi dự đoán theo lớp, rồi chạy thêm seed (ít nhất 5) và bootstrap trên cùng test set.
+
+Kết luận hiện tại: kết quả clean thể hiện trade-off precision/recall, chưa chứng minh cải thiện tổng thể; quyết định QC vẫn là **Hold**. Việc tiếp theo là chạy lại đủ bốn lượt trong cùng một môi trường (ưu tiên Colab T4 với cấu hình chuẩn), mở rộng seed và kiểm tra phân bố/lỗi theo lớp trước khi cân nhắc thay đổi ngưỡng pipeline.
 
 ## 6. Quyết định và ghi chú AI
 
@@ -67,4 +83,4 @@ Chưa chạy train. Phần này là tùy chọn và lượt làm việc này ch�
 - **Cách kiểm:** rà chỗ ghi/xóa, không `except: pass`, không viết cứng ngưỡng; chạy unit test, calibration và pipeline trên bản sao. `scripts/verify_edge_cases.py` kiểm thêm 7 ca tự tạo, gồm dòng hai lỗi, dòng trống, nhiều prediction; trước sửa 5/7 đạt, sau sửa 7/7 đạt. Gate budget 0 trả 20 và không export.
 - **Lỗi AI đã sửa:** `second_opinion` bỏ qua prediction rỗng nên mất cảnh báo false positive; đã phân biệt entry rỗng với thiếu entry. `autofix` làm tròn chiều rộng giao khoảng `1e-7` thành 0; đã giữ độ chính xác float khi ghi box và kiểm QC lại không sinh lỗi bắt buộc mới.
 
-Kiểm chứng cuối: **79 test đạt**, 7/7 ca biên đạt, 202 nhãn export khớp hash manifest; hai lượt pipeline cho cùng báo cáo/manifest (trừ thời gian và đường dẫn xuất). Runner `python -X utf8 scripts/check_core_windows.py --no-train` báo **0 lỗi, 1 cảnh báo** bỏ qua train. Checker gốc trên Windows có lỗi so dấu `\\` với `/`, quét nhầm file calibration; runner chỉ chuẩn hóa đường dẫn trong bộ nhớ, giữ nguyên checker và 32 file protected (xem `docs/WINDOWS_CHECK.md`). Môi trường đã kiểm là Python 3.15.2; nên tái lập trên Python 3.9–3.13 theo tài liệu dự án.
+Kiểm chứng cuối: **79 test đạt**, 7/7 ca biên đạt, 202 nhãn export khớp hash manifest; hai lượt pipeline cho cùng báo cáo/manifest (trừ thời gian và đường dẫn xuất). Sau khi hoàn tất train và tạo `comparison.md`, runner `python -X utf8 scripts/check_core_windows.py` chạy đầy đủ (cả train) báo **79 passed, 0 lỗi, 0 cảnh báo**. Checker gốc trên Windows có lỗi so dấu `\\` với `/`, quét nhầm file calibration; runner chỉ chuẩn hóa đường dẫn trong bộ nhớ, giữ nguyên checker và 32 file protected (xem `docs/WINDOWS_CHECK.md`). Checker đầy đủ được chạy với `.venv` Python 3.12.10; các lượt train có khác biệt phiên bản môi trường đã ghi tại §5.
