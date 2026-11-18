@@ -2,7 +2,7 @@
   <img src="docs/assets/hero.png" alt="Day 09 Lab: pipeline kiểm nhãn tự động" width="100%">
 </p>
 
-# Day 09 Lab — Pipeline kiểm nhãn tự động
+# Day 09 Lab — Nguyễn Thành Tài: 202603038 - Nguyễn Thành Tài
 
 <p align="center">
   <img alt="cá nhân" src="https://img.shields.io/badge/lab-cá%20nhân-0b1f3a">
@@ -43,6 +43,8 @@ Bạn sẽ **tự viết 4 module** (`label_format`, `second_opinion`, `autofix`
 
 > **Khi nộp:** đổi dòng tiêu đề README thành `# Day 09 Lab — <Họ và tên>: <MSHV> - <Họ và tên>`.
 > Windows không có `make`: chạy thẳng lệnh `python ...` trong [Makefile](Makefile). Mã thoát `python -m pipeline.run`: 0 Release · 10 Hold · 20 Rework · 30 tạm dừng chờ người duyệt.
+
+Trên Windows, nếu checker gốc báo nhầm `MANIFEST`/`data/calib` trong `pipeline/calibrate.py`, chạy `python -X utf8 scripts/check_core_windows.py --no-train`; xem [giải thích và phạm vi runner tương thích](docs/WINDOWS_CHECK.md).
 
 <details>
 <summary><b>Vì sao cổng Hold ở 10% và ngân sách duyệt chỉ 80 ảnh?</b></summary>
