@@ -32,3 +32,7 @@ train để chạy kiểm tra đầy đủ. Theo [RUBRIC.md](../RUBRIC.md), ph�
 Dự án nêu Python 3.9–3.13 trong [SETUP.md](SETUP.md). Môi trường hiện tại là
 Python 3.15.2; lượt chạy trước đạt 79 test không đảm bảo tương thích trên mọi
 phiên bản. Khi tái lập hoặc nộp bài, nên dùng một phiên bản trong dải dự án hỗ trợ.
+
+Nhãn export được đánh dấu `-text` trong `.gitattributes` để Git giữ nguyên byte
+khi add/clone. Manifest lưu SHA1 của byte nhãn; tự chuyển LF/CRLF sẽ làm hash
+không khớp dù tọa độ box không đổi.

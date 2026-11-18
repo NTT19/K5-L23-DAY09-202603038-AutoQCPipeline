@@ -4,3 +4,6 @@
 *.png binary
 *.JPG binary
 *.pt binary
+
+# Hash trong manifest được tính từ byte nhãn export; không đổi LF/CRLF khi add/clone.
+submission/export/clean_v1/labels/*.txt -text
